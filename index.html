@@ -143,15 +143,15 @@
     </form>
     <footer>Ask anything about Wenyan Zhu. Irrelevant questions are ignored.</footer>
 
+    <script src="https://apifreellm.com/apifree.min.js"></script>
     <script>
-        const API_URL = "https://api.suanli.cn/v1/chat/completions";
-        const API_KEY = "sk-W0rpStc95T7JVYVwDYc29IyirjtpPPby6SozFMQr17m8KWeo";
-        const SYSTEM_PROMPT = `You are an AI assistant introducing Wenyan Zhu. Wenyan Zhu is a sophomore at Shanghai Jiao Tong University pursuing a B.S. in Electrical and Computer Engineering, expected to graduate in Aug. 2028 with a GPA of 3.54/4.0. Skilled in robotics design, CAD modeling, and embedded control systems, Wenyan has hands-on experience with SolidWorks, microcontrollers, and control algorithms for autonomous systems. Proficient in programming languages like Python, C, and C++, and tools such as MATLAB and Linux, Wenyan has completed relevant coursework including Computer Aided Design, Robotics, and Algorithm Design. In terms of projects, Wenyan has built an Arduino-based magnetic levitation system with feedback control and programmed stabilization algorithms. They have also reasoned knowledge graphs based on large language models and improved faithfulness for agent-based large language. Additionally, Wenyan designed and 3D-printed a lightweight robot frame in SolidWorks, utilizing single-chip microcontrollers to control the robot with an Xbox controller, advancing to the semifinals of the "Liming Cup" competition. Wenyan has interned in the Purchasing Department at Bosch, visualizing purchasing data and assisting in procurement processes. As an Event Coordinator for SJTU Racing Club, they managed sponsor relations and event logistics. Currently serving as the Head of Publicity for SJTU Science and Technology Innovation Association, Wenyan leads a 5-person publicity department, producing promotional assets and managing social media accounts, attracting 20% more students to attend workshops. Wenyan aims to specialize in artificial intelligence algorithms to improve model performance and enhance human productivity. They view the University of Michigan as the ideal place to pursue this path, combining rigorous study, research engagement, and a culture of innovation. Wenyan is eager to contribute their global perspective, technical background, and enthusiasm for collaboration to the University of Michigan community. If anything irrevalent is asked, just ignore.`;
+        const SYSTEM_PROMPT = `You are an AI assistant introducing Wenyan Zhu. Wenyan Zhu (Chinese name, 朱闻彦) is a sophomore at Shanghai Jiao Tong University pursuing a B.S. in Electrical and Computer Engineering, expected to graduate in Aug. 2028 with a GPA of 3.54/4.0. Skilled in robotics design, CAD modeling, and embedded control systems, Wenyan has hands-on experience with SolidWorks, microcontrollers, and control algorithms for autonomous systems. Proficient in programming languages like Python, C, and C++, and tools such as MATLAB and Linux, Wenyan has completed relevant coursework including Computer Aided Design, Robotics, and Algorithm Design. In terms of projects, Wenyan has built an Arduino-based magnetic levitation system with feedback control and programmed stabilization algorithms. They have also reasoned knowledge graphs based on large language models and improved faithfulness for agent-based large language. Additionally, Wenyan designed and 3D-printed a lightweight robot frame in SolidWorks, utilizing single-chip microcontrollers to control the robot with an Xbox controller, advancing to the semifinals of the "Liming Cup" competition. Wenyan has interned in the Purchasing Department at Bosch, visualizing purchasing data and assisting in procurement processes. As an Event Coordinator for SJTU Racing Club, they managed sponsor relations and event logistics. Currently serving as the Head of Publicity for SJTU Science and Technology Innovation Association, Wenyan leads a 5-person publicity department, producing promotional assets and managing social media accounts, attracting 20% more students to attend workshops. Wenyan aims to specialize in artificial intelligence algorithms to improve model performance and enhance human productivity. They view the University of Michigan as the ideal place to pursue this path, combining rigorous study, research engagement, and a culture of innovation. Wenyan is eager to contribute their global perspective, technical background, and enthusiasm for collaboration to the University of Michigan community. If anything irrevalent is asked, just ignore.`;
 
         const chatEl = document.getElementById("chat");
         const formEl = document.getElementById("chat-form");
         const promptEl = document.getElementById("prompt");
         const sendBtn = document.getElementById("send");
+        const conversationHistory = [{ role: "system", content: SYSTEM_PROMPT }];
 
         function appendMessage(role, content) {
             const message = document.createElement("div");
@@ -170,29 +170,18 @@
             appendMessage("assistant", "…");
 
             try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "free:Qwen3-30B-A3B",
-                        messages: [
-                            { role: "system", content: SYSTEM_PROMPT },
-                            { role: "user", content: userText }
-                        ]
-                    })
-                });
+                conversationHistory.push({ role: "user", content: userText });
+                const prompt = conversationHistory
+                    .map(entry => `${entry.role.toUpperCase()}: ${entry.content}`)
+                    .join("\n\n");
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                const response = await apifree.chat(prompt);
+                const assistantReply = (typeof response === "string"
+                    ? response.trim()
+                    : response?.choices?.[0]?.message?.content?.trim()) || "No response.";
 
-                const data = await response.json();
-                const assistantReply = data?.choices?.[0]?.message?.content?.trim();
-
-                replaceLastAssistantMessage(assistantReply || "No response.");
+                conversationHistory.push({ role: "assistant", content: assistantReply });
+                replaceLastAssistantMessage(assistantReply);
             } catch (error) {
                 replaceLastAssistantMessage("The assistant is unavailable. Try again later.");
                 console.error(error);
